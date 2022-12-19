@@ -28,8 +28,6 @@ def load_data(name_database):
     return fact_table, schools
 
 
-
-
 # Initial header
 
 st.title('Observatório do Sorriso')
