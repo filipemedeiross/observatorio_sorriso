@@ -4,73 +4,74 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 
-
-# Auxiliary functions
-
+# Função auxiliar para carregar os dados
 @st.cache
-def load_data(name_database):
-    # Connecting to the database and getting cursor
-    conn = sqlite3.connect(name_database)
+def carregar_dados(base_dados):
+    # Conectando a base de dados e obtendo o cursor
+    conn = sqlite3.connect(base_dados)
     cur = conn.cursor()
 
-    # Getting the fact table
+    # Obtendo a tabela fato
     res = cur.execute("SELECT * FROM CPO_D")
-    fact_table = pd.DataFrame(res.fetchall(),
-                              columns=np.array(res.description)[:, 0])
-    fact_table.drop(columns=["index"], inplace=True)
+    tabela_fato = pd.DataFrame(res.fetchall(),
+                               columns=np.array(res.description)[:, 0])
+    tabela_fato.drop(columns=["index"], inplace=True)
     
-    # Getting the dimension 'Escola'
+    # Obtendo a dimensão 'Escola'
     res = cur.execute("SELECT * FROM Escola")
-    schools = pd.DataFrame(res.fetchall(),
+    escolas = pd.DataFrame(res.fetchall(),
                            columns=np.array(res.description)[:, 0])
-    schools.drop(columns=["index"], inplace=True)
+    escolas.drop(columns=["index"], inplace=True)
 
-    return fact_table, schools
+    # Obtendo a dimensão 'Faixa_etaria'
+    res = cur.execute("SELECT * FROM Faixa_etaria")
+    faixa_etaria = pd.DataFrame(res.fetchall(),
+                                columns=np.array(res.description)[:, 0])
+    faixa_etaria.drop(columns=["index"], inplace=True)
 
+    # Obtendo a dimensão 'Exame'
+    res = cur.execute("SELECT * FROM Exame")
+    exame = pd.DataFrame(res.fetchall(),
+                         columns=np.array(res.description)[:, 0])
+    exame.drop(columns=["index"], inplace=True)
 
-# Initial header
+    return tabela_fato, escolas, faixa_etaria, exame
 
+# Cabeçalho inicial
 st.title('Observatório do Sorriso')
 
-
-# Loading data
-
-DATA = 'observatorio_sorriso'
-
-fact_table, schools = load_data(DATA)
-
-# Displaying the data summary
+# Carregando dados
+fato, escolas, fe, exame = carregar_dados('observatorio_sorriso')
 
 st.header("Quantidade de alunos examinados em Palmas-TO")
 
-student_counts = fact_table.join(schools["escola.região"], on="escola_id").groupby("escola.região")["quantidade_populacao"].sum()
+# Quantidade de alunos por região
+alunos_regiao = fato.join(escolas["escola.região"], on="escola_id").groupby("escola.região")["quantidade_populacao"].sum()
 
-fig = px.pie(student_counts, values="quantidade_populacao",
-                names=student_counts.index, hole=.7)
-
-fig.update_layout(annotations=[dict(text=f"<b>{student_counts.sum()}</b>", x=0.5, y=0.55, font_size=30, showarrow=False),
-                                dict(text="alunos", x=0.5, y=0.45, font_size=20, showarrow=False)])
-
+fig = px.pie(alunos_regiao, values="quantidade_populacao",
+             names=alunos_regiao.index, hole=.7)
+fig.update_layout(annotations=[dict(text=f"<b>{alunos_regiao.sum()}</b>", x=0.5, y=0.55, font_size=30, showarrow=False),
+                               dict(text="alunos", x=0.5, y=0.45, font_size=20, showarrow=False)])
 st.plotly_chart(fig)
 
+# Sumário de informações relevantes
+# Média do CPO-D em Palmas/TO
+# Quantidade de escolas, territórios e regiões analisadas
 col1, col2, col3, col4 = st.columns(4)
 
-with col1:
-    st.header(np.round(fact_table["soma_cpo"].sum() / fact_table["quantidade_populacao"].sum(), 2))
+col1.metric("CPO-D Palmas", np.round(fato["soma_cpo"].sum() / fato["quantidade_populacao"].sum(), 2))
+col2.metric("escolas públicas", escolas.shape[0])
+col3.metric("territórios", escolas["escola.território"].unique().shape[0])
+col4.metric("regiões", escolas["escola.região"].unique().shape[0])
 
-    st.write("CPO-D Palmas")
+# Obtendo os dados brutos
+st.selectbox("Exibir tabela:", ("", "CPO-D", "Escolas", "Faixa_etaria", "Exame"), key="exibir_tabelas")
 
-with col2:
-    st.header(schools.shape[0])
-
-    st.write("escolas públicas")
-
-with col3:
-    st.header(schools["escola.território"].unique().shape[0])
-
-    st.write("territórios") 
-
-with col4:
-    st.header(schools["escola.região"].unique().shape[0])
-
-    st.write("regiões")   
+if st.session_state.exibir_tabelas == "CPO-D":
+    st.dataframe(fato)
+elif st.session_state.exibir_tabelas == "Escolas":
+    st.dataframe(escolas)
+elif st.session_state.exibir_tabelas == "Faixa_etaria":
+    st.dataframe(fe)
+elif st.session_state.exibir_tabelas == "Exame":
+    st.dataframe(exame)
