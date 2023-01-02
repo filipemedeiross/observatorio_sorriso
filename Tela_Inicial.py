@@ -36,6 +36,7 @@ def carregar_dados(base_dados):
     exame.drop(columns=["index"], inplace=True)
     
     # Fechar conexão
+    conn.close()
 
     return tabela_fato, escolas, faixa_etaria, exame
 
