@@ -40,11 +40,11 @@ def carregar_dados(base_dados):
 
     return tabela_fato, escolas, faixa_etaria, exame
 
+# Carregando dados
+fato, escolas, fe, exame = carregar_dados("observatorio_sorriso")
+
 # Cabeçalho inicial
 st.title("Observatório do Sorriso")
-
-# Carregando dados
-fato, escolas, fe, exame = carregar_dados('observatorio_sorriso')
 
 # Quantidade de alunos por região
 st.header("Quantidade de alunos examinados em Palmas-TO")
@@ -52,7 +52,7 @@ st.header("Quantidade de alunos examinados em Palmas-TO")
 alunos_regiao = fato.join(escolas["escola.região"], on="escola_id")
 alunos_regiao = alunos_regiao.groupby("escola.região")["quantidade_populacao"].sum()
 
-fig = px.pie(alunos_regiao, values="quantidade_populacao", names=alunos_regiao.index, hole=.7)
+fig = px.pie(values=alunos_regiao, names=alunos_regiao.index, hole=.7)
 fig.update_layout(annotations=[dict(text=f"<b>{alunos_regiao.sum()}</b>", x=0.5, y=0.55, font_size=30, showarrow=False),
                                dict(text="alunos", x=0.5, y=0.45, font_size=20, showarrow=False)])
 st.plotly_chart(fig)
