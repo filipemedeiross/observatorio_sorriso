@@ -48,6 +48,7 @@ dados = fato.join(escolas["escola.região"], on="escola_id").join(fe, on="faixa_
 
 dados["escola.região"] = dados["escola.região"].map({regiao : "RURAL" if regiao=="RURAL" else "URBANO"
                                                      for regiao in dados["escola.região"].unique()})
+dados = dados.astype({"idade" : str})                                                     
 
 dados.rename(columns={"escola.região" : "escola.zona"}, inplace=True)
 dados.drop(["escola_id", "faixa_etaria_id", "exame_id"], axis=1, inplace=True)
@@ -62,14 +63,26 @@ alunos_zona.rename(columns={"C" : "Cariados", "P" : "Perdidos", "O" : "Obturados
 
 alunos_zona_idade = dados.groupby(["escola.zona", "idade"])[["soma_cpo", "quantidade_populacao"]].sum()
 
+alunos_15_19 = alunos_zona_idade[alunos_zona_idade.index.get_level_values(1).map(lambda x: x in ["15", "16", "17", "18", "19"])].groupby(level=0).sum()
+alunos_15_19.index = pd.MultiIndex.from_product([["RURAL", "URBANO"], ["15-19"]],
+                                                names=alunos_zona_idade.index.names)
+
+alunos_zona_idade = alunos_zona_idade.append(alunos_15_19)
+
+alunos_zona_idade.drop(pd.MultiIndex.from_tuples((("RURAL", "13"), ("RURAL", "14"), ("RURAL", "16"), ("RURAL", "17"), ("URBANO", "13"),
+                                                  ("URBANO", "14"), ("URBANO", "16"), ("URBANO", "17"), ("URBANO", "18"), ("URBANO", "19"))),
+                       axis=0, inplace=True)
+
 alunos_zona_idade["cpo-d"] = alunos_zona_idade["soma_cpo"] / alunos_zona_idade["quantidade_populacao"]
 alunos_zona_idade["cpo-d"] = alunos_zona_idade["cpo-d"].apply(lambda cpo: round(cpo, 2))
 
-# Constantes e funções auxiliares
-h, w = 450, 350
+alunos_zona_idade.sort_values(by="idade", inplace=True)
 
+# Constantes e funções auxiliares
 labels = {col : "" for col in alunos_zona.columns}
-labels[alunos_zona.index.name] = ""
+labels[alunos_zona.index.name] = labels["value"] = labels["variable"] = ""
+
+labels_cpo_d_zona = {"x" : "faixa etária", "y" : "CPO-D", "color" : "zona"}
 
 multi_indice = lambda x: alunos_zona_idade.index.get_level_values(x)
 
@@ -79,32 +92,28 @@ col1, col2 = st.columns(2)
 col3, col4 = st.columns(2)
 
 # Quantidade de alunos por zona de Palmas
-fig1 = px.bar(alunos_zona, y="quantidade_populacao", text_auto=True,
-              title="Quantidade de alunos por zona de Palmas",
-              labels=labels, height=h, width=w)
+fig1 = px.bar(alunos_zona, y="quantidade_populacao", labels=labels, text_auto=True,
+              title="Quantidade de alunos por zona de Palmas")
 fig1.update_traces(textfont_size=18, textposition="outside", cliponaxis=False)
 
-col1.plotly_chart(fig1)
+col1.plotly_chart(fig1, use_container_width=True)
 
 # CPO-D por zona
-fig2 = px.bar(alunos_zona, x="cpo-d", text_auto=True, title="CPO-D por zona",
-              labels=labels, height=h, width=w)
+fig2 = px.bar(alunos_zona, x="cpo-d", labels=labels, text_auto=True, title="CPO-D por zona")
 fig2.update_traces(textfont_size=14)
 
-col2.plotly_chart(fig2)
+col2.plotly_chart(fig2, use_container_width=True)
 
 # Evolução CPO-D por zona
-fig3 = px.line(x=[str(i) + " anos" for i in multi_indice(1)], y=alunos_zona_idade["cpo-d"],
-               text=alunos_zona_idade["cpo-d"], color=multi_indice(0), title="Evolução CPO-D por zona",
-               labels={"x":"faixa etária", "y":"CPO-D", "color":"zona"}, height=h, width=w)
-fig3.update_traces(textposition="top left")
+fig3 = px.line(alunos_zona_idade, x=[str(i) + " anos" for i in multi_indice(1)], y="cpo-d", text="cpo-d",
+               color=multi_indice(0), labels=labels_cpo_d_zona, title="Evolução CPO-D por zona")
+fig3.update_traces(textposition="top center")
 fig3.update_layout(legend_x=0)
 
-col3.plotly_chart(fig3)
+col3.plotly_chart(fig3, use_container_width=True)
 
 # Composição CPO-D por zona
-fig4 = px.bar(alunos_zona, y=["Cariados", "Perdidos", "Obturados"], title="Composição CPO-D por zona",
-              labels={"value" : "", "variable" : "", "escola.zona" : ""}, height=h, width=w)
+fig4 = px.bar(alunos_zona, y=["Cariados", "Perdidos", "Obturados"], labels=labels, title="Composição CPO-D por zona")
 fig4.update_layout(legend_x=0)
 
-col4.plotly_chart(fig4)
+col4.plotly_chart(fig4, use_container_width=True)
