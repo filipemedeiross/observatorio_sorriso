@@ -63,15 +63,13 @@ alunos_zona.rename(columns={"C" : "Cariados", "P" : "Perdidos", "O" : "Obturados
 
 alunos_zona_idade = dados.groupby(["escola.zona", "idade"])[["soma_cpo", "quantidade_populacao"]].sum()
 
-alunos_15_19 = alunos_zona_idade[alunos_zona_idade.index.get_level_values(1).map(lambda x: x in ["15", "16", "17", "18", "19"])].groupby(level=0).sum()
-alunos_15_19.index = pd.MultiIndex.from_product([["RURAL", "URBANO"], ["15-19"]],
+alunos_15_19 = alunos_zona_idade[alunos_zona_idade.index.get_level_values(1).isin(["15", "16", "17", "18", "19"])].groupby(level=0).sum()
+alunos_15_19.index = pd.MultiIndex.from_product([alunos_zona_idade.index.get_level_values(0).unique(), ["15-19"]],
                                                 names=alunos_zona_idade.index.names)
 
 alunos_zona_idade = alunos_zona_idade.append(alunos_15_19)
 
-alunos_zona_idade.drop(pd.MultiIndex.from_tuples((("RURAL", "13"), ("RURAL", "14"), ("RURAL", "16"), ("RURAL", "17"), ("URBANO", "13"),
-                                                  ("URBANO", "14"), ("URBANO", "16"), ("URBANO", "17"), ("URBANO", "18"), ("URBANO", "19"))),
-                       axis=0, inplace=True)
+alunos_zona_idade = alunos_zona_idade[alunos_zona_idade.index.get_level_values(1).isin(["12", "15", "15-19"])]
 
 alunos_zona_idade["cpo-d"] = alunos_zona_idade["soma_cpo"] / alunos_zona_idade["quantidade_populacao"]
 alunos_zona_idade["cpo-d"] = alunos_zona_idade["cpo-d"].apply(lambda cpo: round(cpo, 2))
