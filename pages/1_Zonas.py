@@ -4,44 +4,11 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 
-# Função auxiliar para carregar os dados
-@st.cache
-def carregar_dados(base_dados):
-    # Conectando a base de dados e obtendo o cursor
-    conn = sqlite3.connect(base_dados)
-    cur = conn.cursor()
+# Configurações iniciais da página
+st.set_page_config(layout="wide")
 
-    # Obtendo a tabela fato
-    res = cur.execute("SELECT * FROM CPO_D")
-    tabela_fato = pd.DataFrame(res.fetchall(),
-                               columns=np.array(res.description)[:, 0])
-    tabela_fato.drop(columns=["index"], inplace=True)
-    
-    # Obtendo a dimensão 'Escola'
-    res = cur.execute("SELECT * FROM Escola")
-    escolas = pd.DataFrame(res.fetchall(),
-                           columns=np.array(res.description)[:, 0])
-    escolas.drop(columns=["index"], inplace=True)
-
-    # Obtendo a dimensão 'Faixa_etaria'
-    res = cur.execute("SELECT * FROM Faixa_etaria")
-    faixa_etaria = pd.DataFrame(res.fetchall(),
-                                columns=np.array(res.description)[:, 0])
-    faixa_etaria.drop(columns=["index"], inplace=True)
-
-    # Obtendo a dimensão 'Exame'
-    res = cur.execute("SELECT * FROM Exame")
-    exame = pd.DataFrame(res.fetchall(),
-                         columns=np.array(res.description)[:, 0])
-    exame.drop(columns=["index"], inplace=True)
-    
-    # Fechar conexão
-    conn.close()
-
-    return tabela_fato, escolas, faixa_etaria, exame
-
-# Carregando os dados
-fato, escolas, fe, exame = carregar_dados("observatorio_sorriso")
+# Obtendo dados a serem utilizados
+fato, escolas, fe = st.session_state.fato, st.session_state.escolas, st.session_state.fe
 
 # Preparando os dados
 dados = fato.join(escolas["escola.região"], on="escola_id").join(fe, on="faixa_etaria_id")

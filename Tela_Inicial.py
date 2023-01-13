@@ -4,6 +4,9 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 
+# Configurações iniciais da página
+st.set_page_config(page_title="Observatório do Sorriso", layout="centered")
+
 # Função auxiliar para carregar os dados
 @st.cache
 def carregar_dados(base_dados):
@@ -40,8 +43,11 @@ def carregar_dados(base_dados):
 
     return tabela_fato, escolas, faixa_etaria, exame
 
-# Carregando dados
-fato, escolas, fe, exame = carregar_dados("observatorio_sorriso")
+# Carregando dados utilizados em todas as pages do app
+st.session_state.fato, st.session_state.escolas, st.session_state.fe, st.session_state.exame = carregar_dados("observatorio_sorriso")
+
+# Obtendo dados a serem utilizados
+fato, escolas = st.session_state.fato, st.session_state.escolas
 
 # Cabeçalho inicial
 st.title("Observatório do Sorriso")
