@@ -3,7 +3,7 @@ import plotly.express as px
 import streamlit as st
 
 # Configurações iniciais da página
-st.set_page_config(layout="wide")
+st.set_page_config(page_title="Zonas 🌇 🌄", layout="wide")
 
 # Obtendo dados a serem utilizados
 fato, escolas, fe = st.session_state.fato, st.session_state.escolas, st.session_state.fe
