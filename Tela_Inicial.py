@@ -4,8 +4,12 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 
+
 # Configurações iniciais da página
-st.set_page_config(page_title="Observatório do Sorriso", layout="centered")
+st.set_page_config(page_title="Observatório do Sorriso", layout="centered", initial_sidebar_state="expanded")
+
+# Definindo constantes
+BASE_DE_DADOS = "observatorio_sorriso"
 
 # Função auxiliar para carregar os dados
 @st.cache
@@ -16,26 +20,22 @@ def carregar_dados(base_dados):
 
     # Obtendo a tabela fato
     res = cur.execute("SELECT * FROM CPO_D")
-    tabela_fato = pd.DataFrame(res.fetchall(),
-                               columns=np.array(res.description)[:, 0])
+    tabela_fato = pd.DataFrame(res.fetchall(), columns=np.array(res.description)[:, 0])
     tabela_fato.drop(columns=["index"], inplace=True)
     
     # Obtendo a dimensão 'Escola'
     res = cur.execute("SELECT * FROM Escola")
-    escolas = pd.DataFrame(res.fetchall(),
-                           columns=np.array(res.description)[:, 0])
+    escolas = pd.DataFrame(res.fetchall(), columns=np.array(res.description)[:, 0])
     escolas.drop(columns=["index"], inplace=True)
 
     # Obtendo a dimensão 'Faixa_etaria'
     res = cur.execute("SELECT * FROM Faixa_etaria")
-    faixa_etaria = pd.DataFrame(res.fetchall(),
-                                columns=np.array(res.description)[:, 0])
+    faixa_etaria = pd.DataFrame(res.fetchall(), columns=np.array(res.description)[:, 0])
     faixa_etaria.drop(columns=["index"], inplace=True)
 
     # Obtendo a dimensão 'Exame'
     res = cur.execute("SELECT * FROM Exame")
-    exame = pd.DataFrame(res.fetchall(),
-                         columns=np.array(res.description)[:, 0])
+    exame = pd.DataFrame(res.fetchall(), columns=np.array(res.description)[:, 0])
     exame.drop(columns=["index"], inplace=True)
     
     # Fechar conexão
@@ -43,18 +43,17 @@ def carregar_dados(base_dados):
 
     return tabela_fato, escolas, faixa_etaria, exame
 
-# Carregando dados utilizados em todas as pages do app
-st.session_state.fato, st.session_state.escolas, st.session_state.fe, st.session_state.exame = carregar_dados("observatorio_sorriso")
+# Carregando dados que serão utilizados em todas as pages do app
+st.session_state.fato, st.session_state.escolas, st.session_state.fe, st.session_state.exame = carregar_dados(BASE_DE_DADOS)
 
 # Obtendo dados a serem utilizados
 fato, escolas = st.session_state.fato, st.session_state.escolas
 
 # Cabeçalho inicial
-st.title("Observatório do Sorriso")
+st.markdown("<h1 style='text-align: center'>Observatório do Sorriso</h1>", unsafe_allow_html=True)
+st.markdown("<h3 style='text-align: center'>Quantidade de alunos examinados em Palmas-TO</h3>", unsafe_allow_html=True)
 
 # Quantidade de alunos por região
-st.header("Quantidade de alunos examinados em Palmas-TO")
-
 alunos_regiao = fato.join(escolas["escola.região"], on="escola_id")
 alunos_regiao = alunos_regiao.groupby("escola.região")["quantidade_populacao"].sum()
 
@@ -68,10 +67,12 @@ st.plotly_chart(fig)
 # Quantidade de escolas, territórios e regiões analisadas
 col1, col2, col3, col4 = st.columns(4)
 
-col1.metric("CPO-D Palmas", np.round(fato["soma_cpo"].sum() / fato["quantidade_populacao"].sum(), 2))
+col1.metric("CPO-D Palmas", round(fato["soma_cpo"].sum() / fato["quantidade_populacao"].sum(), 2))
 col2.metric("escolas públicas", escolas.shape[0])
 col3.metric("territórios", escolas["escola.território"].nunique())
 col4.metric("regiões", escolas["escola.região"].nunique())
 
-# Referências dos dados brutos
-st.caption("Dados brutos disponíveis na [página do github](https://github.com/filipemedeiross/observatorio_sorriso/tree/main/dados) do projeto.")
+# Mais informações sobre o projeto
+# Referência aos dados brutos
+with st.expander("Mais informações"):
+    st.caption("Dados brutos disponíveis na [página do github](https://github.com/filipemedeiross/observatorio_sorriso/tree/main/dados) do projeto.")
