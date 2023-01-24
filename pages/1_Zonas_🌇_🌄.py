@@ -141,6 +141,6 @@ col3.plotly_chart(fig3, use_container_width=True)
 
 # Quantidade de alunos por zona de Palmas
 fig4 = px.pie(values=alunos_zona.quantidade_populacao, names=alunos_zona.index, hole=.7,
-              title="Quantidade de alunos por zona de Palmas")
+              title="Quantidade de alunos por zona")
 
 col4.plotly_chart(fig4, use_container_width=True)
