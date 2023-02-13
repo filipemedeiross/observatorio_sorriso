@@ -5,9 +5,6 @@ import plotly.express as px
 import streamlit as st
 
 
-# Configurações iniciais da página
-st.set_page_config(page_title="Observatório do Sorriso", layout="centered", initial_sidebar_state="expanded")
-
 # Definindo constantes
 BASE_DE_DADOS = "observatorio_sorriso"
 
@@ -38,39 +35,42 @@ def carregar_dados(base_dados):
     exame = pd.DataFrame(res.fetchall(), columns=np.array(res.description)[:, 0])
     exame.drop(columns=["index"], inplace=True)
     
-    # Fechar conexão
-    conn.close()
+    conn.close()  # fechar conexão
 
     return tabela_fato, escolas, faixa_etaria, exame
 
+# Configurações iniciais da página
+st.set_page_config(page_title="Observatório do Sorriso", layout="centered", initial_sidebar_state="expanded")
+
 # Carregando dados que serão utilizados em todas as pages do app
-st.session_state.fato, st.session_state.escolas, st.session_state.fe, st.session_state.exame = carregar_dados(BASE_DE_DADOS)
+st.session_state.f, st.session_state.e, st.session_state.fe, st.session_state.ex = carregar_dados(BASE_DE_DADOS)
 
 # Obtendo dados a serem utilizados
-fato, escolas = st.session_state.fato, st.session_state.escolas
+fato, escolas = st.session_state.f, st.session_state.e
+
+fato_regiao = fato.join(escolas["escola.região"], on="escola_id")
+fato_regiao = fato_regiao.groupby("escola.região")["quantidade_populacao"].sum()  # quantidade de alunos por região
 
 # Cabeçalho inicial
+# Sumário de informações relevantes
+# Média do CPO-D em Palmas/TO
+# Quantidade de alunos, escolas, territórios e regiões analisadas
 st.markdown("<h1 style='text-align: center'>Observatório do Sorriso</h1>", unsafe_allow_html=True)
 st.markdown("<h3 style='text-align: center'>Quantidade de alunos examinados em Palmas-TO</h3>", unsafe_allow_html=True)
 
-# Quantidade de alunos por região
-alunos_regiao = fato.join(escolas["escola.região"], on="escola_id")
-alunos_regiao = alunos_regiao.groupby("escola.região")["quantidade_populacao"].sum()
+col1, col2 = st.columns((8.5, 1.5))
 
-fig = px.pie(values=alunos_regiao, names=alunos_regiao.index, hole=.7)
-fig.update_layout(annotations=[dict(text=f"<b>{alunos_regiao.sum()}</b>", x=0.5, y=0.55, font_size=30, showarrow=False),
-                               dict(text="alunos", x=0.5, y=0.45, font_size=20, showarrow=False)])
-st.plotly_chart(fig)
+fig = px.pie(values=fato_regiao, names=fato_regiao.index, hole=.7)
+fig.update_layout(legend_x=-.25, annotations=[dict(text=f"<b>{fato_regiao.sum()}</b>", x=.5, y=.55, font_size=30, showarrow=False),
+                                              dict(text="alunos", x=.5, y=.45, font_size=20, showarrow=False)])
+col1.plotly_chart(fig, use_container_width=True)
 
-# Sumário de informações relevantes
-# Média do CPO-D em Palmas/TO
-# Quantidade de escolas, territórios e regiões analisadas
-col1, col2, col3, col4 = st.columns(4)
-
-col1.metric("CPO-D Palmas", round(fato["soma_cpo"].sum() / fato["quantidade_populacao"].sum(), 2))
-col2.metric("escolas públicas", escolas.shape[0])
-col3.metric("territórios", escolas["escola.território"].nunique())
-col4.metric("regiões", escolas["escola.região"].nunique())
+col2.markdown(f"<h5> </h5>\
+                <h3>{round(fato['soma_cpo'].sum() / fato['quantidade_populacao'].sum(), 2)}</h3>\
+                <h6>CPO-D Palmas</h6>", unsafe_allow_html=True)
+col2.markdown(f"<h3>{escolas.shape[0]}</h3> <h6>escolas</h6>", unsafe_allow_html=True)
+col2.markdown(f"<h3>{escolas['escola.território'].nunique()}</h3> <h6>territórios</h6>", unsafe_allow_html=True)
+col2.markdown(f"<h3>{escolas['escola.região'].nunique()}</h3> <h6>regiões</h6>", unsafe_allow_html=True)
 
 # Mais informações sobre o projeto
 # Referência aos dados brutos
