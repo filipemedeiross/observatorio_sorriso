@@ -65,7 +65,7 @@ fig.update_layout(legend_x=-.25, annotations=[dict(text=f"<b>{fato_regiao.sum()}
                                               dict(text="alunos", x=.5, y=.45, font_size=20, showarrow=False)])
 col1.plotly_chart(fig, use_container_width=True)
 
-col2.markdown(f"<h5> </h5>\
+col2.markdown(f"<h4> </h4>\
                 <h3>{round(fato['soma_cpo'].sum() / fato['quantidade_populacao'].sum(), 2)}</h3>\
                 <h6>CPO-D Palmas</h6>", unsafe_allow_html=True)
 col2.markdown(f"<h3>{escolas.shape[0]}</h3> <h6>escolas</h6>", unsafe_allow_html=True)
