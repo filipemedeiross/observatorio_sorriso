@@ -6,7 +6,7 @@ import streamlit as st
 st.set_page_config(page_title="Escolas 🏫", layout="wide")
 
 # Obtendo dados a serem utilizados
-fato, escolas, fe = st.session_state.fato, st.session_state.escolas, st.session_state.fe
+fato, escolas, fe = st.session_state.tabela_fato, st.session_state.escolas, st.session_state.faixa_etaria
 
 # Preparando os dados
 dados = fato.join(escolas["escola.nome"], on="escola_id").join(fe, on="faixa_etaria_id")

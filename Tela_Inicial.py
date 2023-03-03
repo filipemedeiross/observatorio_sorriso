@@ -10,26 +10,28 @@ BASE_DE_DADOS = "observatorio_sorriso"
 # Função auxiliar para carregar dados
 @st.cache
 def carregar_dados(base_dados):
-    conn = sqlite3.connect(base_dados)  # conectando a base de dados
+    conn = sqlite3.connect(base_dados)
 
     st.session_state.tabela_fato = pd.read_sql("SELECT * FROM CPO_D", conn, "index")
     st.session_state.escolas = pd.read_sql("SELECT * FROM Escola", conn, "index")
     st.session_state.faixa_etaria = pd.read_sql("SELECT * FROM Faixa_etaria", conn, "index")
     st.session_state.exame = pd.read_sql("SELECT * FROM Exame", conn, "index")
     
-    conn.close()  # fechar conexão
+    conn.close()
 
 # Configurações iniciais da página
 st.set_page_config(page_title="Observatório do Sorriso", initial_sidebar_state="expanded")
 
-# Carregando dados que serão utilizados em todas as pages do app
+# Carregando dados que serão utilizados no app
 carregar_dados(BASE_DE_DADOS)
 
-# Obtendo dados a serem utilizados
+st.session_state.idades = "12", "13", "14", "15", "15-19"  # idades consideradas para a análise
+
+# Obtendo dados a serem utilizados (quantidade de alunos por região)
 fato, escolas = st.session_state.tabela_fato, st.session_state.escolas
 
 fato_regiao = fato.join(escolas["escola.região"], on="escola_id")
-fato_regiao = fato_regiao.groupby("escola.região")["quantidade_populacao"].sum()  # quantidade de alunos por região
+fato_regiao = fato_regiao.groupby("escola.região")["quantidade_populacao"].sum()
 
 # Cabeçalho inicial
 # Sumário de informações relevantes

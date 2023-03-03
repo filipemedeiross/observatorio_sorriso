@@ -5,7 +5,7 @@ import streamlit as st
 
 # Definindo constantes
 AREAS = "RURAL", "URBANO"
-IDADES = "12", "13", "14", "15", "15-19"
+IDADES = st.session_state.idades
 
 # Funções auxiliares
 @st.cache
@@ -46,7 +46,7 @@ def agrupar_area(dados, areas, fe):
     return tabela_area
 
 @st.cache
-def agrupar_area_idade(dados):
+def agrupar_area_idade(dados, areas, fe):
     dados = dados.groupby(["escola.area", "idade"])[["soma_cpo", "quantidade_populacao"]].sum()
 
     alunos_15_19 = dados[dados.index.get_level_values(1).isin(idades_fe(["15-19"]))].groupby(level=0).sum()
@@ -54,22 +54,17 @@ def agrupar_area_idade(dados):
 
     tabela_area_idade = pd.concat([dados, alunos_15_19])
 
+    tabela_area_idade = tabela_area_idade[tabela_area_idade.index.get_level_values(0).isin(areas) &
+                                          tabela_area_idade.index.get_level_values(1).isin(fe)]
+
     tabela_area_idade["cpo-d"] = tabela_area_idade["soma_cpo"] / tabela_area_idade["quantidade_populacao"]
     tabela_area_idade["cpo-d"] = tabela_area_idade["cpo-d"].apply(lambda cpo: round(cpo, 2))
 
     return tabela_area_idade.sort_values(by="idade")
 
 @st.cache
-def filtrar_dados(fato, escolas, faixa_etaria, areas, fe):
-    dados = dados_por_area(fato, escolas, faixa_etaria)
-
-    alunos_area = agrupar_area(dados, areas, fe)
-
-    alunos_area_idade = agrupar_area_idade(dados)
-    alunos_area_idade = alunos_area_idade[alunos_area_idade.index.get_level_values(0).isin(areas) &
-                                          alunos_area_idade.index.get_level_values(1).isin(fe)]
-
-    return alunos_area, alunos_area_idade
+def filtrar_dados(dados, areas, fe):    
+    return agrupar_area(dados, areas, fe), agrupar_area_idade(dados, areas, fe)
 
 # Configurações iniciais da página
 st.set_page_config(page_title="Áreas", layout="wide")
@@ -78,11 +73,9 @@ st.set_page_config(page_title="Áreas", layout="wide")
 st.sidebar.multiselect("Filtrar dados por área", AREAS, AREAS, lambda x: x.capitalize(), key="areas")
 st.sidebar.multiselect("Filtrar dados por idade", IDADES, IDADES, key="fe")
 
-alunos_area, alunos_area_idade = filtrar_dados(st.session_state.tabela_fato,
-                                               st.session_state.escolas,
-                                               st.session_state.faixa_etaria,
-                                               st.session_state.areas,
-                                               st.session_state.fe)
+dados = dados_por_area(st.session_state.tabela_fato, st.session_state.escolas, st.session_state.faixa_etaria)
+
+alunos_area, alunos_area_idade = filtrar_dados(dados, st.session_state.areas, st.session_state.fe)
 
 # Sumário inicial dos dados
 st.title("🌇 🌄 Análise por Áreas")
@@ -120,6 +113,7 @@ col3, col4 = st.columns((7, 3))
 # CPO-D por zona
 fig1 = px.bar(alunos_area, y="cpo-d", labels=labels, text_auto=True, title="CPO-D por zona")
 fig1.update_traces(textfont_size=14)
+fig1.update_yaxes(showticklabels=False)
 
 col1.plotly_chart(fig1, use_container_width=True)
 
@@ -132,8 +126,9 @@ col2.plotly_chart(fig2, use_container_width=True)
 # Evolução CPO-D por zona
 fig3 = px.line(alunos_area_idade, x=[str(i) + " anos" for i in multi_indice(1)], y="cpo-d", text="cpo-d",
                color=multi_indice(0), labels=labels_cpo_d_zona, title="Evolução CPO-D por zona")
+fig3.update_layout(legend_x=1)
 fig3.update_traces(textposition="top center")
-fig3.update_layout(legend_x=0)
+fig3.update_yaxes(showticklabels=False)
 
 # Corrigindo inconsistência de integração entre plotly express e streamlit
 for data in fig3.data:
